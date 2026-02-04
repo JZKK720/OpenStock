@@ -1,6 +1,6 @@
 "use server";
 
-import { connectDB } from "@/database/mongoose";
+import { connectToDatabase } from "@/database/mongoose";
 import { AISettings } from "@/database/models/ai-settings.model";
 import type { AIProvider } from "@/lib/ai/config";
 
@@ -18,7 +18,7 @@ export interface AISettingsParams {
  */
 export async function getAISettings() {
     try {
-        await connectDB();
+        await connectToDatabase();
         const settings = await AISettings.findOne({ isActive: true });
         
         if (!settings) {
@@ -51,7 +51,7 @@ export async function getAISettings() {
  */
 export async function updateAISettings(params: AISettingsParams) {
     try {
-        await connectDB();
+        await connectToDatabase();
 
         // Deactivate all existing settings
         await AISettings.updateMany({}, { isActive: false });

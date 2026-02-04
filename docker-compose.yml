@@ -2,8 +2,6 @@ services:
   openstock:
     build:
       context: .
-      extra_hosts:
-        - "mongodb:host-gateway"
     ports:
       - "3101:3000"
     env_file:
@@ -11,6 +9,8 @@ services:
     restart: unless-stopped
     depends_on:
       - mongodb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   mongodb:
     image: mongo:7
