@@ -5,6 +5,8 @@ import { getAllUsersForNewsEmail } from "@/lib/actions/user.actions";
 import { getWatchlistSymbolsByEmail } from "@/lib/actions/watchlist.actions";
 import { getNews } from "@/lib/actions/finnhub.actions";
 import { getFormattedTodayDate } from "@/lib/utils";
+import { getAIProviderConfig } from "@/lib/actions/ai-settings.actions";
+import { callAIWithFallback } from "@/lib/ai/config";
 
 export const sendSignUpEmail = inngest.createFunction(
     { id: 'sign-up-email' },
@@ -19,51 +21,39 @@ export const sendSignUpEmail = inngest.createFunction(
 
         const prompt = PERSONALIZED_WELCOME_EMAIL_PROMPT.replace('{{userProfile}}', userProfile)
 
+        // Get AI provider configuration
+        const aiConfig = await step.run('get-ai-config', async () => {
+            return await getAIProviderConfig();
+        });
 
         let aiResponse;
-        try {
-            aiResponse = await step.ai.infer('generate-welcome-intro', {
-                model: step.ai.models.gemini({ model: 'gemini-2.5-flash-lite' }),
-                body: {
-                    contents: [
-                        {
+        
+        // Use Gemini via Inngest if configured
+        if (aiConfig.provider === 'gemini') {
+            try {
+                aiResponse = await step.ai.infer('generate-welcome-intro', {
+                    model: step.ai.models.gemini({ model: 'gemini-2.5-flash-lite' }),
+                    body: {
+                        contents: [{
                             role: 'user',
-                            parts: [
-                                { text: prompt }
-                            ]
+                            parts: [{ text: prompt }]
                         }]
-                }
-            });
-        } catch (error) {
-            console.error("⚠️ Gemini API failed, switching to Siray.ai fallback", error);
-
-            // Fallback Step
-            aiResponse = await step.run('generate-welcome-intro-fallback', async () => {
-                const SIRAY_API_KEY = process.env.SIRAY_API_KEY;
-                if (!SIRAY_API_KEY) throw new Error("Siray API Key missing");
-
-                // Simulated OpenAI-compatible call
-                const res = await fetch('https://api.siray.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SIRAY_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: 'siray-1.0-ultra', // Hypothetical model
-                        messages: [{ role: 'user', content: prompt }]
-                    })
+                    }
                 });
-
-                if (!res.ok) throw new Error(`Siray API Error: ${res.statusText}`);
-
-                const data = await res.json();
-                // Map to Gemini format for compatibility downstream
-                return {
-                    candidates: [{
-                        content: { parts: [{ text: data.choices[0].message.content }] }
-                    }]
-                };
+            } catch (error) {
+                console.error("⚠️ Gemini API failed, attempting fallback", error);
+                if (aiConfig.enableFallback) {
+                    aiResponse = await step.run('generate-welcome-intro-fallback', async () => {
+                        return await callAIWithFallback(prompt, aiConfig.fallbackProvider);
+                    });
+                } else {
+                    throw error;
+                }
+            }
+        } else {
+            // Use alternative AI provider (Ollama, LM Studio, or Siray)
+            aiResponse = await step.run('generate-welcome-intro', async () => {
+                return await callAIWithFallback(prompt, aiConfig.provider, aiConfig.enableFallback);
             });
         }
 
@@ -114,38 +104,35 @@ export const sendWeeklyNewsSummary = inngest.createFunction(
             .replace('daily', 'weekly')
             .replace('Daily', 'Weekly');
 
+        // Get AI provider configuration
+        const aiConfig = await step.run('get-ai-config', async () => {
+            return await getAIProviderConfig();
+        });
 
         let aiResponse;
-        try {
-            aiResponse = await step.ai.infer('generate-news-summary', {
-                model: step.ai.models.gemini({ model: 'gemini-2.5-flash-lite' }),
-                body: { contents: [{ role: 'user', parts: [{ text: prompt }] }] }
-            });
-        } catch (error) {
-            console.error("⚠️ Gemini API failed (Weekly News), switching to Siray.ai fallback", error);
-            aiResponse = await step.run('generate-news-summary-fallback', async () => {
-                const SIRAY_API_KEY = process.env.SIRAY_API_KEY;
-                if (!SIRAY_API_KEY) return { candidates: [{ content: { parts: [{ text: "Market is moving. Log in to see more." }] } }] };
-
-                const res = await fetch('https://api.siray.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SIRAY_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: 'siray-1.0-ultra',
-                        messages: [{ role: 'user', content: prompt }]
-                    })
+        
+        // Use Gemini via Inngest if configured
+        if (aiConfig.provider === 'gemini') {
+            try {
+                aiResponse = await step.ai.infer('generate-news-summary', {
+                    model: step.ai.models.gemini({ model: 'gemini-2.5-flash-lite' }),
+                    body: { contents: [{ role: 'user', parts: [{ text: prompt }] }] }
                 });
-
-                if (!res.ok) throw new Error("Siray API Error");
-                const data = await res.json();
-                return {
-                    candidates: [{
-                        content: { parts: [{ text: data.choices[0].message.content }] }
-                    }]
-                };
+            } catch (error) {
+                console.error("⚠️ Gemini API failed (Weekly News), attempting fallback", error);
+                if (aiConfig.enableFallback) {
+                    aiResponse = await step.run('generate-news-summary-fallback', async () => {
+                        return await callAIWithFallback(prompt, aiConfig.fallbackProvider);
+                    });
+                } else {
+                    // Return default message if fallback is disabled
+                    aiResponse = { candidates: [{ content: { parts: [{ text: "Market is moving. Log in to see more." }] } }] };
+                }
+            }
+        } else {
+            // Use alternative AI provider (Ollama, LM Studio, or Siray)
+            aiResponse = await step.run('generate-news-summary', async () => {
+                return await callAIWithFallback(prompt, aiConfig.provider, aiConfig.enableFallback);
             });
         }
 

@@ -21,7 +21,6 @@ const requiredVars = {
     'FINNHUB_BASE_URL': 'Finnhub API base URL',
     
     // Inngest
-    'GEMINI_API_KEY': 'Google Gemini API key',
     'INNGEST_SIGNING_KEY': 'Inngest signing key (for Vercel)',
     
     // Email
@@ -31,6 +30,19 @@ const requiredVars = {
 
 const optionalVars = {
     'FINNHUB_API_KEY': 'Legacy Finnhub key (deprecated, use NEXT_PUBLIC_FINNHUB_API_KEY)',
+    
+    // AI Provider Configuration
+    'AI_PROVIDER': 'AI provider to use: gemini, ollama, lmstudio, or siray (default: gemini)',
+    'GEMINI_API_KEY': 'Google Gemini API key (required if AI_PROVIDER=gemini)',
+    'SIRAY_API_KEY': 'Siray.ai API key (for fallback or if AI_PROVIDER=siray)',
+    
+    // Ollama Configuration
+    'OLLAMA_BASE_URL': 'Ollama API base URL (default: http://host.docker.internal:11434)',
+    'OLLAMA_MODEL': 'Ollama model to use (default: llama3.2)',
+    
+    // LM Studio Configuration
+    'LMSTUDIO_BASE_URL': 'LM Studio API base URL (default: http://host.docker.internal:14321/v1)',
+    'LMSTUDIO_MODEL': 'LM Studio model to use (default: local-model)',
 };
 
 console.log('🔍 Checking Environment Variables...\n');

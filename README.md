@@ -259,6 +259,21 @@ GEMINI_API_KEY=your_gemini_api_key
 # Get this from your Inngest dashboard: https://app.inngest.com/env/settings/keys
 INNGEST_SIGNING_KEY=your_inngest_signing_key
 
+# AI Provider Configuration (Optional - defaults to Gemini)
+# Options: gemini, ollama, lmstudio, siray
+AI_PROVIDER=gemini
+
+# Ollama (Local AI) - Optional
+# OLLAMA_BASE_URL=http://host.docker.internal:11434
+# OLLAMA_MODEL=llama3.2
+
+# LM Studio (Local AI) - Optional
+# LMSTUDIO_BASE_URL=http://host.docker.internal:14321/v1
+# LMSTUDIO_MODEL=local-model
+
+# Siray.ai (Fallback or Primary) - Optional
+# SIRAY_API_KEY=your_siray_api_key
+
 # Email (Nodemailer via Gmail; consider App Passwords if 2FA)
 NODEMAILER_EMAIL=youraddress@gmail.com
 NODEMAILER_PASSWORD=your_gmail_app_password
@@ -287,6 +302,21 @@ GEMINI_API_KEY=your_gemini_api_key
 # Get this from your Inngest dashboard: https://app.inngest.com/env/settings/keys
 INNGEST_SIGNING_KEY=your_inngest_signing_key
 
+# AI Provider Configuration (Optional - defaults to Gemini)
+# Options: gemini, ollama, lmstudio, siray
+AI_PROVIDER=gemini
+
+# Ollama (Local AI) - Optional
+# OLLAMA_BASE_URL=http://host.docker.internal:11434
+# OLLAMA_MODEL=llama3.2
+
+# LM Studio (Local AI) - Optional
+# LMSTUDIO_BASE_URL=http://host.docker.internal:14321/v1
+# LMSTUDIO_MODEL=local-model
+
+# Siray.ai (Fallback or Primary) - Optional
+# SIRAY_API_KEY=your_siray_api_key
+
 # Email (Nodemailer via Gmail; consider App Passwords if 2FA)
 NODEMAILER_EMAIL=youraddress@gmail.com
 NODEMAILER_PASSWORD=your_gmail_app_password
@@ -298,7 +328,109 @@ Notes
 - In production, prefer a dedicated SMTP provider over a personal Gmail.
 - Do not hardcode secrets in the Dockerfile; use `.env` and Compose.
 
-## 🧱 Project Structure <a name="project-structure"></a>
+## � AI Provider Configuration <a name="ai-configuration"></a>
+
+OpenStock supports multiple AI providers for generating personalized emails and market insights. You can choose between cloud-based and local AI models.
+
+### Supported Providers
+
+#### 🌐 Cloud Providers
+
+**Google Gemini (Default)**
+- High-performance AI with Google's infrastructure
+- Requires API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+- Model: `gemini-2.5-flash-lite`
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+**Siray.ai**
+- Reliable AI infrastructure with high availability
+- Excellent for fallback/redundancy
+- Get API key from [Siray.ai](https://www.siray.ai/)
+```env
+AI_PROVIDER=siray
+SIRAY_API_KEY=your_siray_api_key
+```
+
+#### 💻 Local Providers
+
+**Ollama**
+- Run AI models completely locally on your machine
+- No API key required, completely private
+- Perfect for development and self-hosting
+
+Setup:
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull a model
+ollama pull llama3.2
+
+# Start the server
+ollama serve
+```
+
+Configuration:
+```env
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OLLAMA_MODEL=llama3.2
+```
+
+**LM Studio**
+- User-friendly local AI server with OpenAI-compatible API
+- GUI for managing models
+- Download from [lmstudio.ai](https://lmstudio.ai)
+
+Setup:
+1. Download and install LM Studio
+2. Load a model in the UI
+3. Enable local server (default port: 1234)
+
+Configuration:
+```env
+AI_PROVIDER=lmstudio
+LMSTUDIO_BASE_URL=http://host.docker.internal:14321/v1
+LMSTUDIO_MODEL=local-model
+```
+
+### Web UI Configuration
+
+Access the AI settings page at `/settings/ai` to:
+- Select your preferred AI provider
+- Configure API keys and endpoints
+- Enable automatic fallback to backup providers
+- Test connections before saving
+
+### Automatic Fallback
+
+Enable fallback to ensure AI services never fail:
+```env
+AI_PROVIDER=gemini          # Primary provider
+SIRAY_API_KEY=your_key      # Fallback provider
+```
+
+If the primary provider fails, the system automatically switches to the fallback (Siray by default).
+
+### Docker Compose with Local AI
+
+To use Ollama or LM Studio with Docker:
+
+```yaml
+services:
+  openstock:
+    # ... existing config
+    environment:
+      - AI_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+```
+
+## �🧱 Project Structure <a name="project-structure"></a>
 
 ```
 app/
