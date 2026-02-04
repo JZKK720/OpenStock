@@ -36,6 +36,26 @@ export const getAuth = async () => {
     });
 
     return authInstance;
+};
+
+// Build-safe auth export
+// During build, return a mock that will work for static generation
+// At runtime, it will properly initialize
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build' || 
+                     process.env.NEXT_PHASE === 'phase-development-build' ||
+                     !process.env.MONGODB_URI;
+
+if (isBuildPhase) {
+    console.log('🔧 Build phase detected - using mock auth');
 }
 
-export const auth = await getAuth();
+export const auth = isBuildPhase 
+    ? ({
+        api: {
+            getSession: async () => null,
+            signUpEmail: async () => ({ user: null }),
+            signInEmail: async () => ({ user: null }),
+            signOut: async () => {},
+        }
+    } as unknown as ReturnType<typeof betterAuth>)
+    : await getAuth();

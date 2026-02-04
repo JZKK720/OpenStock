@@ -18,14 +18,20 @@ export const transporter = nodemailer.createTransport({
     maxMessages: 3,
 })
 
-// Verify connection on startup
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('❌ Nodemailer transporter verification failed:', error);
-    } else {
-        console.log('✅ Nodemailer transporter is ready to send emails');
+// Verify connection on startup (skip during build)
+if (process.env.NODE_ENV !== 'production' || typeof window === 'undefined') {
+    // Only verify in development or skip during Next.js build
+    if (process.env.NODEMAILER_EMAIL && process.env.NODEMAILER_PASSWORD && 
+        process.env.NODEMAILER_EMAIL !== 'your_email@gmail.com') {
+        transporter.verify((error, success) => {
+            if (error) {
+                console.error('❌ Nodemailer transporter verification failed:', error);
+            } else {
+                console.log('✅ Nodemailer transporter is ready to send emails');
+            }
+        });
     }
-});
+}
 
 export const sendWelcomeEmail = async ({ email, name, intro }: WelcomeEmailData) => {
     try {

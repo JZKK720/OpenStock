@@ -29,6 +29,12 @@ if (!cached) {
 }
 
 export const connectToDatabase = async () => {
+    // Skip database connection during Next.js build
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+        console.log('⏭️  Skipping MongoDB connection during build');
+        return null;
+    }
+
     if (!MONGODB_URI) {
         throw new Error("MongoDB URI is missing");
     }
