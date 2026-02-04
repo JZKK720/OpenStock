@@ -1,5 +1,27 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Load .env file manually
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const envPath = join(__dirname, '..', '.env');
+try {
+    const envFile = readFileSync(envPath, 'utf8');
+    envFile.split('\n').forEach(line => {
+        line = line.trim();
+        if (line && !line.startsWith('#')) {
+            const [key, ...values] = line.split('=');
+            if (key && values.length) {
+                process.env[key.trim()] = values.join('=').trim();
+            }
+        }
+    });
+} catch (e) {
+    console.warn('⚠️ .env file not found or cannot be read');
+}
+
 /**
  * Environment Variables Checker
  * Run: node scripts/check-env.mjs
