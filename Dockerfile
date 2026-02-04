@@ -4,6 +4,9 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
+# Set environment variable to skip database connection during build
+ENV NEXT_PHASE=phase-production-build
+
 # Copy package.json and package-lock.json to leverage Docker cache
 COPY package*.json ./
 # Uncomment the next line if you use pnpm and have pnpm-lock.yaml
